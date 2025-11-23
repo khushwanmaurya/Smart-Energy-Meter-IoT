@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Energy Monitor</title>
+    <style>
+        :root {
+            --primary-color: #10b981; /* Emerald Green */
+            --bg-color: #f3f4f6;
+            --card-bg: #ffffff;
+            --text-color: #1f2937;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            color: #065f46;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 1000px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            color: #6b7280;
+        }
+
+        .value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 10px 0;
+        }
+
+        .unit {
+            font-size: 1rem;
+            color: #9ca3af;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-on {
+            background-color: #10b981;
+            box-shadow: 0 0 10px #10b981;
+        }
+
+        .status-off {
+            background-color: #ef4444;
+            box-shadow: 0 0 10px #ef4444;
+        }
+
+        .relay-status {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .loading {
+            font-size: 0.9rem;
+            color: #6b7280;
+            margin-top: 20px;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <h1>⚡ Smart Energy Monitor</h1>
+
+    <div class="dashboard">
+        <div class="card">
+            <h2>Voltage</h2>
+            <div class="value" id="voltage">--</div>
+            <div class="unit">Volts (V)</div>
+        </div>
+
+        <div class="card">
+            <h2>Current</h2>
+            <div class="value" id="current">--</div>
+            <div class="unit">Amperes (A)</div>
+        </div>
+
+        <div class="card">
+            <h2>Power</h2>
+            <div class="value" id="power">--</div>
+            <div class="unit">Watts (W)</div>
+        </div>
+
+        <div class="card">
+            <h2>Relay Status</h2>
+            <div class="relay-status">
+                <span id="relay-indicator" class="status-indicator status-off"></span>
+                <span id="relay-text">OFF</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading" id="connection-status">Connecting to server...</div>
+
+    <script>
+        const API_URL = 'https://iot.om-mishra.com/data';
+
+        async function fetchData() {
+            const statusEl = document.getElementById('connection-status');
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                     throw new Error('Network response was not ok');
+                }
+                const data = await response.json();
+
+                if (data) {
+                    document.getElementById('voltage').textContent = data.vrms.toFixed(1);
+                    document.getElementById('current').textContent = data.irms.toFixed(3);
+                    document.getElementById('power').textContent = data.power.toFixed(1);
+
+                    const relayText = document.getElementById('relay-text');
+                    const relayIndicator = document.getElementById('relay-indicator');
+
+                    if (data.relay_state) {
+                        relayText.textContent = "ON";
+                        relayIndicator.className = "status-indicator status-on";
+                    } else {
+                        relayText.textContent = "OFF";
+                        relayIndicator.className = "status-indicator status-off";
+                    }
+                    statusEl.textContent = "Live Data";
+                    statusEl.style.color = "#10b981";
+                } else {
+                    statusEl.textContent = "Waiting for data...";
+                    statusEl.style.color = "#f59e0b";
+                }
+
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                statusEl.textContent = "Error connecting to backend";
+                statusEl.style.color = "#ef4444";
+            }
+        }
+
+        // Fetch data every 2 seconds
+        setInterval(fetchData, 2000);
+        fetchData(); // Initial call
+    </script>
+</body>
+</html>
